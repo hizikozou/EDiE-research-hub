@@ -1,57 +1,80 @@
+# EDiE-research-hub  
+## Evolutionary Discovery Engineering (EDiE)
+
 ## Manifesto
 
 - [Evolutionary Discovery Engineering (EDiE) Manifesto](Evolutionary_Discovery_Engineering_MANIFESTO.md)
 
-# QAT-research-hub  
-**Auto-generated Quantization as Survival Strategy (QAT)**
+---
 
-This repository documents an ongoing research project that treats **quantization not as a post-processing trick**,  
-but as a **primary research target and survival mechanism for AI under constrained resources**.
+## Overview
 
-The core question is simple but radical:
+This repository is the **central research hub for Evolutionary Discovery Engineering (EDiE)**.
 
-> *What if quantization rules themselves were generated, competed, and selected —  
-> even if humans cannot fully interpret them?*
+Evolutionary Discovery Engineering is an engineering paradigm in which:
+- Solutions are not directly designed by humans.
+- Environments, constraints, and evaluation rules are designed instead.
+- Algorithms and structures are **discovered through evolution and competition**.
+- Humans retain responsibility for **determining value**, not for enforcing interpretability.
+
+This repository collects concrete research programs, experiments, and logs
+that operationalize EDiE as a practical research methodology.
 
 ---
 
-## Motivation
+## Core Research Programs
 
-Most quantization research focuses on optimization within human-designed frameworks:
+The research conducted under EDiE currently proceeds along three complementary routes:
 
-- Reduce bit-width  
-- Preserve accuracy  
-- Follow interpretable heuristics  
+### **QAT — Quantization as Survival Strategy**
+Quantization is treated not as a post-processing optimization trick,
+but as a **primary survival mechanism for AI under constrained resources**.
 
-This project deliberately questions those assumptions.
+Rather than hand-designing quantization rules, QAT explores:
+- Automated generation of quantization strategies
+- Competition and selection among strategies
+- Survival-based evaluation independent of human interpretability
 
-Instead of designing quantization rules by hand,  
-I design **the rules under which quantization strategies survive**.
+QAT currently serves as the **primary theoretical and experimental backbone**
+of this repository.
 
 ---
 
-## Research Structure
+### **MIN — Minimum Intelligence under Constraints**
+MIN focuses on identifying:
+- Boundary conditions where AI behavior collapses
+- Failure modes on minimal hardware and compute budgets
+- The minimum requirements for intelligence-like behavior to emerge
 
-This research proceeds along three clearly separated but complementary routes:
+Experiments span microcontrollers, edge devices, and severely constrained systems.
 
-- **QAT**  
-  Define competition rules and extract **AI survival strategies** through automated search and selection.
+---
 
-- **MIN**  
-  Observe failure modes and boundary behavior of AI systems on real hardware  
-  (microcontrollers, edge devices, minimal compute).
+### **R-Cubie — Embodied Edge AI Experiments**
+R-Cubie is a hands-on experimental hardware series exploring:
+- Physical embodiment of edge AI
+- Playful but rigorous experimentation
+- Human-perceptible demonstrations of minimal intelligence
 
-- **RCB**  
-  Hands-on experimental hardware diary (R-Cubie series),  
-  focusing on physical realization and playful exploration.
+R-Cubie serves as the **embodied, demonstrative counterpart** to QAT and MIN.
 
-This repository focuses primarily on **QAT**.
+---
+
+## Research Focus of This Repository
+
+While EDiE encompasses all three programs,
+this repository currently focuses primarily on **QAT**.
+
+QAT provides the clearest testbed for validating the core hypothesis of EDiE:
+that meaningful algorithms can be discovered through survival dynamics,
+even when humans cannot fully explain or predict them.
 
 ---
 
 ## Research Logs (QAT)
 
-Each chapter is written as a standalone research log, following a paper-like structure.
+Each chapter is written as a standalone research log,
+structured similarly to sections of an academic paper.
 
 - **[QAT_DAY001](docs/QAT_DAY001.md)**  
   Auto-generated quantization as a primary research target
@@ -65,41 +88,46 @@ Each chapter is written as a standalone research log, following a paper-like str
 - **[QAT_DAY004](docs/QAT_DAY004.md)**  
   Evaluation axes, competition rules, and literature map
 
-- **[QAT_DAY005](docs/QAT_DAY005.md)**: Executable roadmap for auto-generated quantization survival experiments  
-  (Concrete milestones from environment setup to strategy tournaments)
+- **[QAT_DAY005](docs/QAT_DAY005.md)**  
+  Executable roadmap for auto-generated quantization survival experiments  
+  (from environment setup to strategy tournaments)
 
-These chapters correspond roughly to the *problem definition, methodology, and positioning* sections of a research paper.
+Together, these logs correspond roughly to the
+*problem definition, methodology, and positioning* sections of a research paper.
 
 ---
 
 ## Current Status
 
 - Phase: **Pre-experimental design**
-- Next step: **GPU-based survival experiments**  
-  (initially on RTX 5060 Ti, full automated evaluation)
+- Next step: **GPU-based survival experiments**
+  - Initial platform: RTX 5060 Ti
+  - Goal: fully automated generation, competition, and evaluation of strategies
 
 ---
 
 ## Why This Matters
 
-Edge AI, local LLMs, and MicroAI systems all face the same bottleneck:
+Edge AI, local LLMs, and MicroAI systems face a shared bottleneck:
 
-> *Human-designed assumptions embedded too deeply into system design.*
+> Human-designed assumptions embedded too deeply into system design.
 
-This research explores whether removing just **one more layer of human bias**  
+EDiE explores whether removing just **one additional layer of human bias**
+— even at the cost of interpretability —
 can shift the practical performance boundary of AI systems.
+
+This question applies across domains, from microcontrollers to autonomous systems.
 
 ---
 
 ## Related Writing (Japanese)
 
-For readers interested in background thoughts, informal logs, and parallel exploration,  
-I also write in Japanese here:
+Background thoughts, informal exploration, and parallel logs are written in Japanese:
 
 - https://myon.hatenadiary.com/
 
-The GitHub repository is intended as the **canonical, world-facing research record**.  
-The blog serves as a more free-form companion.
+This GitHub repository serves as the **canonical, world-facing research record**.  
+The blog acts as a companion space for reflection and narrative context.
 
 ---
 
