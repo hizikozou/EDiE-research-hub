@@ -61,7 +61,7 @@ Each chapter is written as a standalone research log, following a paper-like str
 - **[QAT_DAY004](docs/QAT_DAY004.md)**  
   Evaluation axes, competition rules, and literature map
 
-  - **[QAT_DAY005](docs/QAT_DAY005.md)**: Executable roadmap for auto-generated quantization survival experiments  
+- **[QAT_DAY005](docs/QAT_DAY005.md)**: Executable roadmap for auto-generated quantization survival experiments  
   (Concrete milestones from environment setup to strategy tournaments)
 
 These chapters correspond roughly to the *problem definition, methodology, and positioning* sections of a research paper.
