@@ -4,6 +4,10 @@ DYN_DAY001 — Dynamics of Adaptation under Abrupt Change
 
 1. Abstract
 
+This project implements a tiny agent-based evolutionary simulator built from scratch in Processing.
+Each agent autonomously observes, adapts, and survives under abrupt environmental changes (Terrain Shifts).
+The goal is to visualize resilience as intelligence, not static optimization.
+
 This document establishes the DYN (Dynamics & Resilience) research track under the Evolutionary Discovery Engineering (EDiE) framework.
 
 Moving beyond static optimization, this track investigates how autonomous agent populations acquire "abrupt change resilience" (ACR). We explore the mechanisms by which agents redefine their survival strategies and relocate optimal zones when environmental parameters shift unpredictably.
@@ -67,3 +71,5 @@ BallSimulation.pde (tools/dyn_env_sim/)
 experiment_log.txt (logs/)
 
 AXI_DAY001.md (docs/)
+
+We used Gemini to generate explanations and summaries of the Processing simulation code and experimental structure.
