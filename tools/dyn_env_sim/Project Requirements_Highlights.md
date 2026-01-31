@@ -38,6 +38,7 @@ Resilience Modeling: Beyond simple optimization, this simulates "meta-learning" 
 🔗 Live Demo
 
 EDiE DYN Simulator - Live on Cloud Run
+https://edie-dyn-sim-835393366389.asia-northeast1.run.app/
 
 📝 Usage / 使い方
 
