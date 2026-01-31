@@ -66,12 +66,10 @@ This "Window" allows agents to react to the new gravity before the next evaluati
 
 Agents that cannot stabilize within this window are eliminated from the gene pool.
 
-5. Output Data
+5. File Structure
 
-The simulator generates a file named experiment_log.txt in the root directory.
+EDiE_DYN_Resilience_Sim.pde: The main simulation source code.
 
-Format: Generation, LearningRate, Friction
-
-Use this data to analyze the correlation between environmental shift frequency and parameter convergence.
+experiment_log.txt: Raw output data (Generation, LearningRate, Friction).
 
 Developed as part of the Evolutionary Discovery Engineering (EDiE) Project.
