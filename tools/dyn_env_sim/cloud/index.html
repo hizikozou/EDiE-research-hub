@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>EDiE DYN Simulator - Resilience Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="status">Loading...</div>
+        <div id="timer"></div>
+        <div style="font-size: 10px; color: #aaa; margin-top: 5px;">[C]: Trigger Change | [Mouse]: Gravity</div>
+    </div>
+    <script>
+        let balls = [];
+        let generation = 1;
+        let maxGenerations = 10;
+        let frameCountPerGen = 480; 
+        let framesUntilNextGen = 480;
+        let terrainPhase = 0;
+        let mode = 0; // 0: Setting, 1: Simulation, 2: Result
+        let historyLR = [];
+        let mutationRateLR = 0.0001;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            initBalls();
+        }
+
+        function initBalls() {
+            balls = [];
+            for (let i = 0; i < 100; i++) {
+                balls.push(new Ball());
+            }
+        }
+
+        function draw() {
+            background(20);
+            if (mode === 0) {
+                drawSetting();
+            } else if (mode === 1) {
+                runSimulation();
+            } else if (mode === 2) {
+                drawGraph();
+            }
+        }
+
+        function drawSetting() {
+            textAlign(CENTER);
+            fill(255);
+            textSize(24);
+            text("=== EDiE SETTING ===", width/2, height/2 - 40);
+            mutationRateLR = map(mouseX, 0, width, 0.00001, 0.002);
+            textSize(16);
+            text("Mutation Rate (LR): " + mutationRateLR.toFixed(5), width/2, height/2);
+            fill(150);
+            text("Click to Start Survival Test", width/2, height/2 + 40);
+            if (mouseIsPressed) {
+                mode = 1;
+                framesUntilNextGen = frameCountPerGen;
+            }
+        }
+
+        function runSimulation() {
+            drawTerrain();
+            let bestBall = balls[0];
+            let minLoss = Infinity;
+
+            for (let b of balls) {
+                b.update();
+                b.display();
+                let l = lossFunction(b.weight);
+                if (l < minLoss) { minLoss = l; bestBall = b; }
+            }
+
+            // Elite Marker
+            fill(255, 0, 0);
+            let ex = map(bestBall.weight, -2, 2, 0, width);
+            let ey = lossFunction(bestBall.weight);
+            ellipse(ex, ey, 15, 15);
+
+            // UI Update
+            document.getElementById('status').innerText = "Generation: " + generation + " / " + maxGenerations;
+            document.getElementById('timer').innerText = "Next Eval in: " + (framesUntilNextGen/60).toFixed(1) + "s";
+
+            framesUntilNextGen--;
+            if (framesUntilNextGen <= 0) {
+                handleGeneration(bestBall);
+                framesUntilNextGen = frameCountPerGen;
+            }
+        }
+
+        function handleGeneration(elite) {
+            if (generation <= maxGenerations) {
+                historyLR.push(elite.myLR);
+            }
+            if (generation >= maxGenerations) {
+                mode = 2;
+                return;
+            }
+            for (let b of balls) {
+                b.myLR = elite.myLR + random(-mutationRateLR, mutationRateLR);
+                b.weight = random(-2, 2);
+                b.velocity = 0;
+            }
+            generation++;
+        }
+
+        function drawGraph() {
+            textAlign(CENTER);
+            fill(255);
+            textSize(20);
+            text("=== EVOLUTION GRAPH (Learning Rate) ===", width/2, 50);
+            
+            stroke(0, 255, 0); noFill();
+            beginShape();
+            for (let i = 0; i < historyLR.length; i++) {
+                let x = map(i, 0, maxGenerations - 1, 100, width - 100);
+                let y = map(historyLR[i], 0, 0.01, height - 100, 150);
+                vertex(x, y);
+                ellipse(x, y, 6, 6);
+            }
+            endShape();
+            
+            noStroke(); fill(200);
+            textSize(14);
+            text("The population evolved adaptability to abrupt shifts.", width/2, height - 80);
+            text("Reload page to restart simulation.", width/2, height - 50);
+        }
+
+        function drawTerrain() {
+            stroke(255, 100); noFill();
+            beginShape();
+            for (let x = 0; x <= width; x += 5) {
+                let w = map(x, 0, width, -2, 2);
+                vertex(x, lossFunction(w));
+            }
+            endShape();
+        }
+
+        function lossFunction(w) {
+            let base = height/2 + sin(w * 5 + terrainPhase) * 80 + cos(w * 2) * 40;
+            let mouseW = map(mouseX, 0, width, -2, 2);
+            if (mouseIsPressed && abs(w - mouseW) < 0.2) base -= 150 * (0.2 - abs(w-mouseW));
+            return base;
+        }
+
+        function keyPressed() {
+            if (key === 'c' || key === 'C') {
+                terrainPhase = random(100);
+                framesUntilNextGen = 240; // 4秒の猶予
+            }
+        }
+
+        class Ball {
+            constructor() {
+                this.weight = random(-2, 2);
+                this.velocity = 0;
+                this.myLR = random(0.0001, 0.01);
+                this.myFriction = 0.95;
+                this.color = color(random(100, 255), random(100, 255), 255, 150);
+            }
+            update() {
+                let c = lossFunction(this.weight);
+                let n = lossFunction(this.weight + 0.01);
+                let grad = (n - c) / 0.01;
+                this.velocity = (this.velocity * this.myFriction) + (grad * this.myLR);
+                this.weight += this.velocity;
+            }
+            display() {
+                let x = map(this.weight, -2, 2, 0, width);
+                let y = lossFunction(this.weight);
+                fill(this.color); noStroke();
+                ellipse(x, y, 10, 10);
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>
