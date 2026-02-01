@@ -73,3 +73,17 @@ EDiE_DYN_Resilience_Sim.pde: The main simulation source code.
 experiment_log.txt: Raw output data (Generation, LearningRate, Friction).
 
 Developed as part of the Evolutionary Discovery Engineering (EDiE) Project.
+
+🔗 Live Demo
+
+EDiE DYN Simulator - Live on Cloud Run https://edie-dyn-sim-835393366389.asia-northeast1.run.app/
+
+📝 Usage / 使い方
+
+Adjust Mutation Rate: Use your mouse to set the initial volatility.
+
+Survival Test: Click to start the 10-generation test.
+
+Trigger Change [C]: Manually shift the environment to test the population's resilience.
+
+Final Analysis: Review the evolved Learning Rate graph at the end.
