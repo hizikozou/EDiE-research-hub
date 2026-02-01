@@ -31,7 +31,7 @@ bash deploy.sh
 
 
 Access the living instance:
-Once the command completes, it will provide a Service URL (e.g., https://edie-dyn-sim-xxxx.a.run.app).
+Once the command completes, it will provide a Service URL (e.g., https://edie-dyn-sim-835393366389.asia-northeast1.run.app/).
 
 🛠 Technical Specifications
 
