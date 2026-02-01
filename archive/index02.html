@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>EDiE DYN Simulator - Resilience Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 10; }
+        #advisor-ui { 
+            position: absolute; top: 10px; right: 10px; width: 300px; 
+            background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
+            backdrop-filter: blur(5px); z-index: 20;
+        }
+        .advisor-label { font-size: 10px; color: #44aaff; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+        .advisor-text { font-size: 13px; line-height: 1.5; color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="status">Loading...</div>
+        <div id="timer"></div>
+        <div style="font-size: 10px; color: #aaa; margin-top: 5px;">[C]: Trigger Change | [Mouse]: Gravity</div>
+    </div>
+
+    <!-- 軍師 UI -->
+    <div id="advisor-ui">
+        <div class="advisor-label">DYN Intelligence Advisor</div>
+        <div id="advisor-content" class="advisor-text">システム起動準備完了。戦況を分析中...</div>
+    </div>
+
+    <script>
+        const apiKey = ""; // APIキーは自動注入されます
+        let balls = [];
+        let generation = 1;
+        let maxGenerations = 10;
+        let frameCountPerGen = 480; 
+        let framesUntilNextGen = 480;
+        let terrainPhase = 100;
+        let mode = 0; // 0: Setting, 1: Simulation, 2: Result
+        let historyLR = [];
+        let mutationRateLR = 0.0001;
+        
+        // 軍師用メッセージ管理
+        let lastAdvisorUpdate = 0;
+
+        async function updateAdvisor(prompt) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "あなたは高度な軍事・戦術AI「軍師」です。現在のシミュレーション状況（学習率、世代、地形の変化など）を受け取り、短く、冷徹かつ的確な状況報告を日本語で行ってください。回答は2〜3文程度に留めてください。" }] }
+                    })
+                });
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) document.getElementById('advisor-content').innerText = text;
+            } catch (e) {
+                console.error("Advisor error", e);
+            }
+        }
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            initBalls();
+        }
+
+        function initBalls() {
+            balls = [];
+            for (let i = 0; i < 100; i++) {
+                balls.push(new Ball());
+            }
+        }
+
+        function draw() {
+            background(20);
+            if (mode === 0) {
+                drawSetting();
+            } else if (mode === 1) {
+                runSimulation();
+            } else if (mode === 2) {
+                drawGraph();
+            }
+        }
+
+        function drawSetting() {
+            textAlign(CENTER);
+            fill(255);
+            textSize(24);
+            text("=== EDiE SETTING ===", width/2, height/2 - 40);
+            mutationRateLR = map(mouseX, 0, width, 0.00001, 0.002);
+            textSize(16);
+            text("Mutation Rate (LR): " + mutationRateLR.toFixed(5), width/2, height/2);
+            fill(150);
+            text("Click to Start Survival Test", width/2, height/2 + 40);
+            if (mouseIsPressed) {
+                mode = 1;
+                framesUntilNextGen = frameCountPerGen;
+                updateAdvisor("シミュレーションを開始する。変異率は " + mutationRateLR.toFixed(5) + " に設定された。");
+            }
+        }
+
+        function runSimulation() {
+            drawTerrain();
+            let bestBall = balls[0];
+            let minLoss = Infinity;
+
+            for (let b of balls) {
+                b.update();
+                b.display();
+                let l = lossFunction(b.weight);
+                if (l < minLoss) { minLoss = l; bestBall = b; }
+            }
+
+            fill(255, 0, 0);
+            let ex = map(bestBall.weight, -2, 2, 0, width);
+            let ey = lossFunction(bestBall.weight);
+            ellipse(ex, ey, 15, 15);
+
+            document.getElementById('status').innerText = "Generation: " + generation + " / " + maxGenerations;
+            document.getElementById('timer').innerText = "Next Eval in: " + (framesUntilNextGen/60).toFixed(1) + "s";
+
+            framesUntilNextGen--;
+            if (framesUntilNextGen <= 0) {
+                handleGeneration(bestBall);
+                framesUntilNextGen = frameCountPerGen;
+            }
+        }
+
+        function handleGeneration(elite) {
+            if (generation <= maxGenerations) {
+                historyLR.push(elite.myLR);
+            }
+            
+            if (generation % 2 === 0) {
+                updateAdvisor(`第${generation}世代が終了。エリートの学習率は${elite.myLR.toFixed(6)}。個体群の適応を確認せよ。`);
+            }
+
+            if (generation >= maxGenerations) {
+                mode = 2;
+                updateAdvisor("全世代のシミュレーションを完了した。リザルトを展開する。");
+                return;
+            }
+            for (let b of balls) {
+                b.myLR = elite.myLR + random(-mutationRateLR, mutationRateLR);
+                b.weight = random(-2, 2);
+                b.velocity = 0;
+            }
+            generation++;
+        }
+
+        function drawGraph() {
+            const padding = 100;
+            const graphW = width - padding * 2;
+            const graphH = height - padding * 2;
+
+            textAlign(CENTER);
+            fill(255);
+            textSize(20);
+            text("=== EVOLUTION GRAPH (Learning Rate) ===", width/2, 50);
+
+            // 背景目盛り
+            stroke(255, 30);
+            strokeWeight(1);
+            for(let i=0; i<=5; i++){
+                let y = map(i, 0, 5, height - padding, padding + 50);
+                line(padding, y, width - padding, y);
+                noStroke(); fill(150); textSize(10);
+                text((i * 0.002).toFixed(3), padding - 30, y + 4);
+                stroke(255, 30);
+            }
+            for(let i=0; i<maxGenerations; i++){
+                let x = map(i, 0, maxGenerations - 1, padding, width - padding);
+                line(x, height - padding, x, padding + 50);
+                noStroke(); fill(150);
+                text("G" + (i+1), x, height - padding + 20);
+                stroke(255, 30);
+            }
+
+            // 赤線 (コネクション)
+            stroke(255, 50, 50);
+            strokeWeight(2);
+            noFill();
+            beginShape();
+            for (let i = 0; i < historyLR.length; i++) {
+                let x = map(i, 0, maxGenerations - 1, padding, width - padding);
+                let y = map(historyLR[i], 0, 0.01, height - padding, padding + 50);
+                vertex(x, y);
+            }
+            endShape();
+
+            // 緑点 (データポイント)
+            noStroke();
+            for (let i = 0; i < historyLR.length; i++) {
+                let x = map(i, 0, maxGenerations - 1, padding, width - padding);
+                let y = map(historyLR[i], 0, 0.01, height - padding, padding + 50);
+                fill(0, 255, 100);
+                ellipse(x, y, 8, 8);
+                // ツールチップ的な数値
+                fill(255, 200);
+                textSize(9);
+                text(historyLR[i].toFixed(5), x, y - 10);
+            }
+            
+            fill(200);
+            textSize(14);
+            textAlign(CENTER);
+            text("Adaptability evolution confirmed. The elite traits survived the shifts.", width/2, height - 50);
+        }
+
+        function drawTerrain() {
+            stroke(255, 100); noFill();
+            beginShape();
+            for (let x = 0; x <= width; x += 5) {
+                let w = map(x, 0, width, -2, 2);
+                vertex(x, lossFunction(w));
+            }
+            endShape();
+        }
+
+        function lossFunction(w) {
+            let base = height/2 + sin(w * 5 + terrainPhase) * 80 + cos(w * 2) * 40;
+            let mouseW = map(mouseX, 0, width, -2, 2);
+            if (mouseIsPressed && abs(w - mouseW) < 0.2) base -= 150 * (0.2 - abs(w-mouseW));
+            return base;
+        }
+
+        function keyPressed() {
+            if (key === 'c' || key === 'C') {
+                terrainPhase = random(100);
+                framesUntilNextGen = 240;
+                updateAdvisor("地形変動を検知。個体群に即時の再適応を命ずる。");
+            }
+        }
+
+        class Ball {
+            constructor() {
+                this.weight = random(-2, 2);
+                this.velocity = 0;
+                this.myLR = random(0.0001, 0.01);
+                this.myFriction = 0.95;
+                this.color = color(random(100, 255), random(100, 255), 255, 150);
+            }
+            update() {
+                let c = lossFunction(this.weight);
+                let n = lossFunction(this.weight + 0.01);
+                let grad = (n - c) / 0.01;
+                this.velocity = (this.velocity * this.myFriction) + (grad * this.myLR);
+                this.weight += this.velocity;
+            }
+            display() {
+                let x = map(this.weight, -2, 2, 0, width);
+                let y = lossFunction(this.weight);
+                fill(this.color); noStroke();
+                ellipse(x, y, 10, 10);
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>
