@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDiE DYN Simulator – Resilience Test</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+  body { margin:0; background:black; color:#ccc; font-family:monospace; }
+  #ui { position:absolute; top:10px; left:10px; }
+</style>
+</head>
+
+<body>
+<div id="ui">
+  <div>Generation: <span id="gen">0</span>/10</div>
+  <div>Population: <span id="pop">100</span></div>
+</div>
+
+<script>
+/* ===============================
+   GLOBAL SETTINGS
+================================ */
+const INITIAL_POP = 100;
+const GENERATION_TIME = 480; // frames (8s @60fps)
+const MAX_GENERATION = 10;
+const SURVIVAL_PERCENT = 0.20;
+
+let generation = 0;
+let frameInGen = 0;
+let balls = [];
+let terrainDamage = [];
+let envEvents = [];
+
+/* Environment parameters (initial) */
+let envFreq = 3;       // 0–7 per generation
+let envStrength = 1.0;
+let envRandomness = 1.0;
+
+/* ===============================
+   BALL AGENT
+================================ */
+class Ball {
+  constructor(lr) {
+    this.lr = lr;
+    this.w = random(-2, 2);
+    this.v = 0;
+    this.loss = 0;
+  }
+
+  update() {
+    let grad = (lossFn(this.w + 0.01) - lossFn(this.w)) / 0.01;
+    this.v -= grad * this.lr;
+    this.w += this.v;
+    this.loss = lossFn(this.w);
+  }
+
+  draw() {
+    let x = map(this.w, -2, 2, 0, width);
+    let y = this.loss;
+    fill(150,200,255);
+    noStroke();
+    ellipse(x, y, 6, 6);
+  }
+}
+
+/* ===============================
+   TERRAIN
+================================ */
+function lossFn(w) {
+  let base =
+    sin(w * 3 + terrainShift) * 120 +
+    cos(w * 1.7) * 80 +
+    height/2;
+
+  let dmg = terrainDamage[Math.floor(map(w,-2,2,0,terrainDamage.length-1))] || 0;
+  return base + dmg;
+}
+
+let terrainShift = 0;
+
+function drawTerrain() {
+  stroke(100);
+  noFill();
+  beginShape();
+  for (let x = 0; x < width; x += 4) {
+    let w = map(x,0,width,-2,2);
+    vertex(x, lossFn(w));
+  }
+  endShape();
+}
+
+/* ===============================
+   INITIALIZATION
+================================ */
+function initPopulation(centerLR) {
+  balls = [];
+  for (let i=0;i<INITIAL_POP;i++) {
+    let lr = centerLR + randomGaussian()*centerLR*0.3;
+    balls.push(new Ball(abs(lr)));
+  }
+}
+
+function setup() {
+  createCanvas(window.innerWidth, window.innerHeight);
+  terrainDamage = new Array(500).fill(0);
+  initPopulation(0.005);
+}
+
+/* ===============================
+   MAIN LOOP
+================================ */
+function draw() {
+  background(0);
+  drawTerrain();
+
+  balls.forEach(b => {
+    b.update();
+    b.draw();
+  });
+
+  frameInGen++;
+
+  // Automatic environment changes
+  if (random() < envFreq / GENERATION_TIME) {
+    terrainShift += random(-envStrength, envStrength) * envRandomness;
+    envEvents.push({gen:generation, frame:frameInGen});
+  }
+
+  if (frameInGen >= GENERATION_TIME) {
+    endGeneration();
+  }
+
+  document.getElementById("gen").innerText = generation;
+  document.getElementById("pop").innerText = balls.length;
+}
+
+/* ===============================
+   GENERATION END
+================================ */
+function endGeneration() {
+  generation++;
+  frameInGen = 0;
+
+  // Sort by loss
+  balls.sort((a,b)=>a.loss-b.loss);
+
+  let cutoff = balls[Math.floor(balls.length * SURVIVAL_PERCENT)].loss;
+  let survivors = balls.filter(b => b.loss <= cutoff);
+
+  if (survivors.length === 0) {
+    noLoop();
+    console.log("EXTINCTION");
+    callGemini("EXTINCTION");
+    return;
+  }
+
+  // Reproduce
+  let nextGen = [];
+  survivors.forEach(parent => {
+    let childLR = parent.lr + randomGaussian()*parent.lr*0.1;
+    nextGen.push(new Ball(abs(childLR)));
+  });
+
+  balls = nextGen;
+
+  if (generation >= MAX_GENERATION) {
+    noLoop();
+    callGemini("SUCCESS");
+  }
+}
+
+/* ===============================
+   MOUSE = ENVIRONMENT DAMAGE
+================================ */
+function mousePressed() {
+  let idx = Math.floor(map(mouseX,0,width,0,terrainDamage.length-1));
+  if (idx>=0 && idx<terrainDamage.length) {
+    terrainDamage[idx] += random(40,80);
+  }
+}
+
+/* ===============================
+   GEMINI (END ONLY)
+================================ */
+function callGemini(result) {
+  console.log("Gemini Summary Triggered:", result);
+  // API call placeholder
+}
+</script>
+</body>
+</html>
